@@ -46,20 +46,20 @@ setup(
         ]
     },
     install_requires=[
+        'requests',        # 2.21.0
 
         # 'pycryptodome',  # 3.14.1
-        # 'base58',  # 1.0.3
-        # 'ecdsa',   # 0.16.1
-        'dimplugins==2.4.0',
+        # 'base58',        # 1.0.3
+        # 'ecdsa',         # 0.16.1
+        'dimplugins>=2.4.1',
 
-        'dimsdk==2.4.0',
-        'dimp==2.4.0',
-        'dkd==2.4.0',
-        'mkm==2.4.0',
+        'dimsdk>=2.4.1',
+        # 'dimp>=2.4.1',
+        # 'dkd>=2.4.1',
+        # 'mkm>=2.4.1',
 
-        'startrek==2.3.1',
+        'startrek>=2.3.1',
 
-        'aiou==1.1.0',
-
+        'aiou>=1.1.0',
     ]
 )

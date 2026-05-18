@@ -26,7 +26,6 @@
 
 import os
 import sys
-import getopt
 
 from dimsdk import ID
 
@@ -36,6 +35,7 @@ path = os.path.dirname(path)
 path = os.path.dirname(path)
 sys.path.insert(0, path)
 
+from dimid.utils import SysArgvParser
 from dimid.utils import init_logger
 from dimid.utils import LogLevel
 from dimid.utils import Runner
@@ -48,27 +48,36 @@ from dimid.register.shared import generate, modify
 #
 # show logs
 #
-init_logger(name='register', level=LogLevel.DEVELOP)
+LOG_LEVEL = LogLevel.DEVELOP
 
 
 DEFAULT_CONFIG = '/etc/dim/config.ini'
 
 
 async def async_main():
-    # create global variable
-    shared = GlobalVariable()
-    config = await create_config(default_config=DEFAULT_CONFIG)
-    await shared.prepare(config=config)
-    try:
-        opts, args = getopt.getopt(args=sys.argv[1:],
-                                   shortopts='hf:',
-                                   longopts=['help', 'config='])
-    except getopt.GetoptError:
+    #
+    #  parse cmd parameters
+    #
+    sys_argv = SysArgvParser.parse(shortopts='hf:ld:',
+                                   longopts=['help', 'config=', 'log-location', 'log-dir='])
+    if sys_argv is None:
         show_help(default_config=DEFAULT_CONFIG)
         sys.exit(1)
     #
+    #  init logger
+    #
+    show_location = sys_argv.has_opt(opt='log-location')
+    init_logger(name='register', level=LOG_LEVEL, show_location=show_location)
+    #
+    #  create global variable
+    #
+    shared = GlobalVariable()
+    config = await create_config(default_config=DEFAULT_CONFIG, sys_argv=sys_argv)
+    await shared.prepare(config=config)
+    #
     #  Check Actions
     #
+    args = sys_argv.args
     if len(args) == 1 and args[0] == 'generate':
         await generate(database=shared.adb)
     elif len(args) == 2 and args[0] == 'modify':

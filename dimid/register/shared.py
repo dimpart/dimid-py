@@ -23,15 +23,14 @@
 # SOFTWARE.
 # ==============================================================================
 
-import getopt
 import sys
 from typing import Optional
 
 from dimsdk import EntityType
 from dimsdk import ID, Bulletin
 
-from ..common.compat import NetworkType, network_to_type
-
+from ..utils import SysArgvParser
+from ..utils import Log
 from ..utils import Singleton
 from ..utils import Path, Config
 from ..common import AccountDBI
@@ -94,24 +93,12 @@ def show_help(default_config: str):
     print('')
 
 
-async def create_config(default_config: str) -> Config:
+async def create_config(default_config: str, sys_argv: SysArgvParser) -> Config:
     """ load config """
-    try:
-        opts, args = getopt.getopt(args=sys.argv[1:],
-                                   shortopts='hf:',
-                                   longopts=['help', 'config='])
-    except getopt.GetoptError:
-        show_help(default_config=default_config)
-        sys.exit(1)
-    # check options
-    ini_file = None
-    for opt, arg in opts:
-        if opt == '--config':
-            ini_file = arg
-        else:
-            show_help(default_config=default_config)
-            sys.exit(0)
-    # check config filepath
+    #
+    #  get INI file
+    #
+    ini_file = sys_argv.get_opt(opt='config')
     if ini_file is None:
         ini_file = default_config
     if not await Path.exists(path=ini_file):
@@ -120,10 +107,12 @@ async def create_config(default_config: str) -> Config:
         print('!!! config file not exists: %s' % ini_file)
         print('')
         sys.exit(0)
-    # loading config
+    #
+    #  loading config
+    #
     config = Config()
     await config.load(path=ini_file)
-    print('[DB] init with config: %s => %s' % (ini_file, config))
+    Log.warning('loaded config: %s => %s', ini_file, config)
     return config
 
 
@@ -134,11 +123,11 @@ async def create_config(default_config: str) -> Config:
 
 
 def create_account(network: int, database: AccountDBI) -> BaseAccount:
-    if EntityType.is_group(network=network_to_type(network=network)):
+    if EntityType.is_group(network=network):
         return GroupAccount(database=database)
-    elif network in [EntityType.STATION, NetworkType.STATION]:
+    elif network == EntityType.STATION:
         return StationAccount(database=database)
-    elif network in [EntityType.BOT, NetworkType.BOT]:
+    elif network == EntityType.BOT:
         return BotAccount(database=database)
     else:
         return UserAccount(database=database)

@@ -23,12 +23,10 @@
 # SOFTWARE.
 # ==============================================================================
 
-from typing import Optional, List, Tuple
+from typing import Optional, List
 
-from dimsdk import GroupCommand, ResetCommand
 from dimsdk import PrivateKey, DecryptKey, SignKey
 from dimsdk import ID, Meta, Document, Bulletin
-from dimsdk import ReliableMessage
 
 from ..utils import Config
 from ..common import MetaUtils
@@ -37,9 +35,6 @@ from ..common import AccountDBI
 from .t_private import PrivateKeyTable
 from .t_meta import MetaTable
 from .t_document import DocumentTable
-from .t_user import UserTable
-from .t_group import GroupTable
-from .t_group_history import GroupHistoryTable
 
 
 class AccountDatabase(AccountDBI):
@@ -53,17 +48,11 @@ class AccountDatabase(AccountDBI):
         self._private_table = PrivateKeyTable(config=config)
         self._meta_table = MetaTable(config=config)
         self._doc_table = DocumentTable(config=config)
-        self._user_table = UserTable(config=config)
-        self._group_table = GroupTable(config=config)
-        self._history_table = GroupHistoryTable(config=config)
 
     def show_info(self):
         self._private_table.show_info()
         self._meta_table.show_info()
         self._doc_table.show_info()
-        self._user_table.show_info()
-        self._group_table.show_info()
-        self._history_table.show_info()
 
     #
     #   PrivateKey DBI
@@ -126,75 +115,3 @@ class AccountDatabase(AccountDBI):
     # Override
     async def get_documents(self, identifier: ID) -> List[Document]:
         return await self._doc_table.get_documents(identifier=identifier)
-
-    #
-    #   User DBI
-    #
-
-    # Override
-    async def get_local_users(self) -> List[ID]:
-        return await self._user_table.get_local_users()
-
-    # Override
-    async def save_local_users(self, users: List[ID]) -> bool:
-        return await self._user_table.save_local_users(users=users)
-
-    # Override
-    async def get_contacts(self, user: ID) -> List[ID]:
-        return await self._user_table.get_contacts(user=user)
-
-    # Override
-    async def save_contacts(self, contacts: List[ID], user: ID) -> bool:
-        return await self._user_table.save_contacts(contacts=contacts, user=user)
-
-    #
-    #   Group DBI
-    #
-
-    # Override
-    async def get_founder(self, group: ID) -> Optional[ID]:
-        return await self._group_table.get_founder(group=group)
-
-    # Override
-    async def get_owner(self, group: ID) -> Optional[ID]:
-        return await self._group_table.get_owner(group=group)
-
-    # Override
-    async def get_members(self, group: ID) -> List[ID]:
-        return await self._group_table.get_members(group=group)
-
-    # Override
-    async def save_members(self, members: List[ID], group: ID) -> bool:
-        return await self._group_table.save_members(members=members, group=group)
-
-    # Override
-    async def get_administrators(self, group: ID) -> List[ID]:
-        return await self._group_table.get_administrators(group=group)
-
-    # Override
-    async def save_administrators(self, administrators: List[ID], group: ID) -> bool:
-        return await self._group_table.save_administrators(administrators=administrators, group=group)
-
-    #
-    #   Group History DBI
-    #
-
-    # Override
-    async def save_group_history(self, group: ID, content: GroupCommand, message: ReliableMessage) -> bool:
-        return await self._history_table.save_group_history(group=group, content=content, message=message)
-
-    # Override
-    async def get_group_histories(self, group: ID) -> List[Tuple[GroupCommand, ReliableMessage]]:
-        return await self._history_table.get_group_histories(group=group)
-
-    # Override
-    async def get_reset_command_message(self, group: ID) -> Tuple[Optional[ResetCommand], Optional[ReliableMessage]]:
-        return await self._history_table.get_reset_command_message(group=group)
-
-    # Override
-    async def clear_group_member_histories(self, group: ID) -> bool:
-        return await self._history_table.clear_group_member_histories(group=group)
-
-    # Override
-    async def clear_group_admin_histories(self, group: ID) -> bool:
-        return await self._history_table.clear_group_admin_histories(group=group)

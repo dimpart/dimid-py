@@ -35,15 +35,6 @@ from .private import PrivateKeyStorage
 from .meta import MetaStorage
 from .document import DocumentStorage
 
-from .user import UserStorage
-from .group import GroupStorage
-from .group_history import GroupHistoryStorage
-
-from .group_keys import GroupKeysStorage
-
-from .login import LoginStorage
-
-from .station import StationStorage
 
 __all__ = [
 
@@ -53,13 +44,4 @@ __all__ = [
     'MetaStorage',
     'DocumentStorage',
 
-    'UserStorage',
-    'GroupStorage',
-    'GroupHistoryStorage',
-
-    'GroupKeysStorage',
-
-    'LoginStorage',
-
-    'StationStorage',
 ]

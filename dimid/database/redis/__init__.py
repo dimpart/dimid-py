@@ -34,13 +34,6 @@ from .base import RedisCache
 
 from .meta import MetaCache
 from .document import DocumentCache
-from .user import UserCache
-from .login import LoginCache
-from .group import GroupCache
-from .grp_history import GroupHistoryCache
-from .grp_keys import GroupKeysCache
-from .message import MessageCache
-from .station import StationCache
 
 
 __all__ = [
@@ -50,10 +43,5 @@ __all__ = [
 
     'MetaCache',
     'DocumentCache',
-    'UserCache', 'LoginCache',
-    'GroupCache', 'GroupHistoryCache',
-    'GroupKeysCache',
-    'MessageCache',
-    'StationCache',
 
 ]

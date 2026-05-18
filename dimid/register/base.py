@@ -35,7 +35,6 @@ from ..utils import Logging
 from ..common import DocumentUtils
 from ..common import MetaVersion
 from ..common import AccountDBI
-from ..common.compat import NetworkType, network_to_type
 
 
 class BaseAccount(Logging, ABC):
@@ -101,7 +100,7 @@ class BaseAccount(Logging, ABC):
 
     @classmethod
     def get_meta_type(cls, address_type: int) -> int:
-        if address_type in [EntityType.USER, NetworkType.MAIN]:
+        if address_type == EntityType.USER:
             version = cls.input_type(candidates=cls.USER_META_TYPES, name='meta type')
         else:
             version = cls.DEFAULT_META_TYPE
@@ -113,7 +112,6 @@ class BaseAccount(Logging, ABC):
         if not MetaVersion.has_seed(version=meta_type):
             # BTC/ETH address as ID without seed
             return None
-        address_type = network_to_type(network=address_type)
         if address_type == EntityType.STATION:
             default_seed = 'test_station'
         elif address_type == EntityType.BOT:

@@ -30,10 +30,6 @@
 
 from dimsdk.mkm import *
 
-from .bot import Bot
-from .station import Station
-from .station import ServiceProvider
-
 from .utils import MetaUtils
 from .utils import DocumentUtils
 
@@ -53,14 +49,6 @@ __all__ = [
 
     'UserDataSource',
     'User', 'BaseUser',
-
-    #
-    #   Extends
-    #
-
-    'Bot',
-    'Station',
-    'ServiceProvider',
 
     #
     #   Utils

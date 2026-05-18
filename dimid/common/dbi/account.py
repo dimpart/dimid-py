@@ -24,13 +24,11 @@
 # ==============================================================================
 
 from abc import ABC, abstractmethod
-from typing import Optional, Union, Dict, List, Tuple
+from typing import Optional, Union, Dict, List
 from typing import Iterable
 
 from dimsdk import PrivateKey, SignKey, DecryptKey
 from dimsdk import ID, Meta, Document
-from dimsdk import ReliableMessage
-from dimsdk import GroupCommand, ResetCommand
 
 
 class PrivateKeyDBI(ABC):
@@ -149,144 +147,7 @@ class DocumentDBI(ABC):
         )
 
 
-class UserDBI(ABC):
-    """ User Table """
-
-    @abstractmethod
-    async def get_local_users(self) -> List[ID]:
-        """ local user ID list """
-        raise NotImplementedError(
-            f'Not implemented: {type(self).__module__}.{type(self).__name__}.get_local_users()'
-        )
-
-    @abstractmethod
-    async def save_local_users(self, users: List[ID]) -> bool:
-        raise NotImplementedError(
-            f'Not implemented: {type(self).__module__}.{type(self).__name__}.save_local_users()'
-        )
-
-
-class ContactDBI(ABC):
-    """ Contact Table """
-
-    @abstractmethod
-    async def get_contacts(self, user: ID) -> List[ID]:
-        """ contacts for user """
-        raise NotImplementedError(
-            f'Not implemented: {type(self).__module__}.{type(self).__name__}.get_contacts()'
-        )
-
-    @abstractmethod
-    async def save_contacts(self, contacts: List[ID], user: ID) -> bool:
-        raise NotImplementedError(
-            f'Not implemented: {type(self).__module__}.{type(self).__name__}.save_contacts()'
-        )
-
-
-class GroupDBI(ABC):
-    """ Group/Member Table """
-
-    @abstractmethod
-    async def get_founder(self, group: ID) -> Optional[ID]:
-        raise NotImplementedError(
-            f'Not implemented: {type(self).__module__}.{type(self).__name__}.get_founder()'
-        )
-
-    @abstractmethod
-    async def get_owner(self, group: ID) -> Optional[ID]:
-        raise NotImplementedError(
-            f'Not implemented: {type(self).__module__}.{type(self).__name__}.get_owner()'
-        )
-
-    @abstractmethod
-    async def get_members(self, group: ID) -> List[ID]:
-        """ group members """
-        raise NotImplementedError(
-            f'Not implemented: {type(self).__module__}.{type(self).__name__}.get_members()'
-        )
-
-    @abstractmethod
-    async def save_members(self, members: List[ID], group: ID) -> bool:
-        raise NotImplementedError(
-            f'Not implemented: {type(self).__module__}.{type(self).__name__}.save_members()'
-        )
-
-    @abstractmethod
-    async def get_administrators(self, group: ID) -> List[ID]:
-        """ group admins """
-        raise NotImplementedError(
-            f'Not implemented: {type(self).__module__}.{type(self).__name__}.get_administrators()'
-        )
-
-    @abstractmethod
-    async def save_administrators(self, administrators: List[ID], group: ID) -> bool:
-        raise NotImplementedError(
-            f'Not implemented: {type(self).__module__}.{type(self).__name__}.save_administrators()'
-        )
-
-
-class GroupHistoryDBI(ABC):
-    """ Group History Command Command Table """
-
-    @abstractmethod
-    async def save_group_history(self, group: ID, content: GroupCommand, message: ReliableMessage) -> bool:
-        """ save group commands:
-                invite
-                expel (deprecated)
-                join
-                quit
-                reset
-                resign
-        """
-        raise NotImplementedError(
-            f'Not implemented: {type(self).__module__}.{type(self).__name__}.save_group_history()'
-        )
-
-    @abstractmethod
-    async def get_group_histories(self, group: ID) -> List[Tuple[GroupCommand, ReliableMessage]]:
-        """ load group commands:
-                invite
-                expel (deprecated)
-                join
-                quit
-                reset
-                resign
-        """
-        raise NotImplementedError(
-            f'Not implemented: {type(self).__module__}.{type(self).__name__}.get_group_histories()'
-        )
-
-    @abstractmethod
-    async def get_reset_command_message(self, group: ID) -> Tuple[Optional[ResetCommand], Optional[ReliableMessage]]:
-        """ load last 'reset' group command """
-        raise NotImplementedError(
-            f'Not implemented: {type(self).__module__}.{type(self).__name__}.get_reset_command_message()'
-        )
-
-    @abstractmethod
-    async def clear_group_member_histories(self, group: ID) -> bool:
-        """ clear group commands for members:
-                invite
-                expel (deprecated)
-                join
-                quit
-                reset
-        """
-        raise NotImplementedError(
-            f'Not implemented: {type(self).__module__}.{type(self).__name__}.clear_group_member_histories()'
-        )
-
-    @abstractmethod
-    async def clear_group_admin_histories(self, group: ID) -> bool:
-        """ clear group commands for administrators:
-                resign
-        """
-        raise NotImplementedError(
-            f'Not implemented: {type(self).__module__}.{type(self).__name__}.clear_group_admin_histories()'
-        )
-
-
 # noinspection PyAbstractClass
-class AccountDBI(PrivateKeyDBI, MetaDBI, DocumentDBI, UserDBI, ContactDBI, GroupDBI, GroupHistoryDBI, ABC):
+class AccountDBI(PrivateKeyDBI, MetaDBI, DocumentDBI, ABC):
     """ Account Database """
     pass

@@ -29,7 +29,6 @@ from dimsdk import ID, Meta
 
 from ...utils import json_encode, json_decode, utf8_encode, utf8_decode
 from ...utils import Logging
-from ...common.compat import Compatible
 
 from .base import RedisCache
 
@@ -68,7 +67,6 @@ class MetaCache(RedisCache, Logging):
             assert js is not None, 'failed to decode string: %s' % value
             info = json_decode(string=js)
             assert info is not None, 'meta error: %s' % value
-            Compatible.fix_meta_version(meta=info)
         try:
             return Meta.parse(meta=info)
         except Exception as error:
