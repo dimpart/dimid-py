@@ -25,17 +25,20 @@
 
 import weakref
 from abc import ABC, abstractmethod
-from typing import Optional, Any, Set, List, Dict
+from typing import Optional, Any, Set, List
 from typing import Iterable
 
 from aiou import JSONFile
+
+from dimsdk import StrMap, MutableStrMap
+from dimsdk import StrList
 
 from dimsdk import JSON
 from dimsdk import Dictionary
 from dimsdk import EntityType, ID
 from dimsdk import Facebook
 
-from startrek.utils import Logging
+from small.log import Logging
 
 from .http import HttpClient
 
@@ -43,7 +46,7 @@ from .http import HttpClient
 class IConfig(ABC):
 
     @abstractmethod
-    def get_section(self, section: str) -> Optional[Dict]:
+    def get_section(self, section: str) -> Optional[StrMap]:
         raise NotImplementedError(
             f'Not implemented: {type(self).__module__}.{type(self).__name__}.get_section()'
         )
@@ -67,7 +70,7 @@ class IConfig(ABC):
         )
 
     @abstractmethod
-    def get_list(self, section: str, option: str, separator: str = ',') -> Optional[List[str]]:
+    def get_list(self, section: str, option: str, separator: str = ',') -> Optional[StrList]:
         raise NotImplementedError(
             f'Not implemented: {type(self).__module__}.{type(self).__name__}.get_list()'
         )
@@ -88,18 +91,18 @@ class MessageTransferAgent(Dictionary):
 
     @property
     def identifier(self) -> Optional[ID]:
-        string = self.get(key='did')
+        string = self.get_str(key='did')
         if string is None:
-            string = self.get(key='ID')
+            string = self.get_str(key='ID')
         return ID.parse(identifier=string)
 
     @property
     def host(self) -> str:
-        return self.get(key='host', default='')
+        return self.get_str(key='host', default='')
 
     @property
     def port(self) -> int:
-        return self.get(key='port', default=0)
+        return self.get_int(key='port', default=0)
 
     @classmethod
     def parse(cls, node: Any):
@@ -108,7 +111,7 @@ class MessageTransferAgent(Dictionary):
         elif isinstance(node, MessageTransferAgent):
             return node
         elif isinstance(node, Dictionary):
-            node = node.to_dict()
+            node = node.to_map()
         host = node.get('host')
         port = node.get('port')
         if host is not None and port is not None and port > 0:
@@ -124,11 +127,11 @@ class MessageTransferAgent(Dictionary):
         return stations
 
     @classmethod
-    def revert(cls, stations: Iterable) -> List[Dict]:
+    def revert(cls, stations: Iterable) -> List[MutableStrMap]:
         array = []
         for node in stations:
-            assert isinstance(node, MessageTransferAgent), 'station node error: %s' % node
-            info = node.to_dict()
+            assert isinstance(node, MessageTransferAgent), f'station node error: {node}'
+            info = node.to_map()
             array.append(info)
         return array
 
@@ -176,10 +179,10 @@ class Supervisor(Logging):
                 if self.check_user(identifier=item):
                     all_users.add(item)
                 continue
-            assert item.is_group, 'group ID error: %s' % item
+            assert item.is_group, f'group ID error: {item}'
             group_members = await facebook.get_members(identifier=item)
             if group_members is None or len(group_members) == 0:
-                self.warning(msg='failed to get members for group: %s' % item)
+                self.warning('failed to get members for group: %s', item)
                 continue
             for member in group_members:
                 if self.check_user(identifier=member):
@@ -203,7 +206,7 @@ class NeighborLoader(Logging):
         # check local path
         output = config.get_string(section='neighbors', option='output')
         if output is None:
-            self.warning(msg='neighbors path not set')
+            self.warning('neighbors path not set')
         elif stations is None:
             stations = await self._load_stations(path=output)
         else:
@@ -212,40 +215,40 @@ class NeighborLoader(Logging):
         return stations
 
     async def _download_stations(self, url: str) -> Optional[List[MessageTransferAgent]]:
-        self.info(msg='downloading stations: %s' % url)
+        self.info('downloading stations: %s', url)
         http = self.__http
         try:
             response = http.cache_get(url=url)
             if response is None or response.status_code != 200:
-                self.error(msg='failed to get URL: %s response: %s' % (url, response))
+                self.error('failed to get URL: %s response: %s', url, response)
                 return None
             else:
                 text = response.text
                 stations = JSON.decode(string=text)
         except Exception as error:
-            self.error(msg='failed to download stations: %s, %s' % (error, url))
+            self.error('failed to download stations: %s, %s', error, url)
             return None
-        if isinstance(stations, Dict):
+        if isinstance(stations, dict):
             stations = stations.get('stations')
-        if isinstance(stations, List):
+        if isinstance(stations, list):
             return MessageTransferAgent.convert(array=stations)
 
     async def _load_stations(self, path: str) -> Optional[List[MessageTransferAgent]]:
-        self.info(msg='loading stations: %s' % path)
+        self.info('loading stations: %s', path)
         try:
             stations = await JSONFile(path=path).read()
         except Exception as error:
-            self.error(msg='failed to load stations: %s, %s' % (error, path))
+            self.error('failed to load stations: %s, %s', error, path)
             return None
-        if isinstance(stations, Dict):
+        if isinstance(stations, dict):
             stations = stations.get('stations')
-        if isinstance(stations, List):
+        if isinstance(stations, list):
             return MessageTransferAgent.convert(array=stations)
 
     async def _save_stations(self, stations: List[MessageTransferAgent], path: str) -> bool:
         info = MessageTransferAgent.revert(stations=stations)
-        self.info(msg='saving %d station(s): %s' % (len(stations), path))
+        self.info('saving %d station(s): %s', len(stations), path)
         try:
             return await JSONFile(path=path).write(info)
         except Exception as error:
-            self.error(msg='failed to save stations: %s, %s' % (error, path))
+            self.error('failed to save stations: %s, %s', error, path)

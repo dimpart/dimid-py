@@ -1,4 +1,4 @@
-# DIMP ID (Python version)
+# DIMP - ID Generator
 
 [![License](https://img.shields.io/github/license/dimpart/dimid-py)](https://github.com/dimpart/dimid-py/blob/master/LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/dimpart/dimid-py/pulls)
@@ -29,15 +29,22 @@
 
 ```
     install_requires=[
-        # 'pycryptodome',  # 3.14.1
-        # 'base58',  # 1.0.3
-        # 'ecdsa',   # 0.16.1
-        'dimplugins>=2.4.0',
+        'requests',        # 2.21.0
 
-        'dimsdk>=2.4.0',
-        # 'dimp>=2.4.0',
-        # 'dkd>=2.4.0',
-        # 'mkm>=2.4.0',
+        # 'pycryptodome',  # 3.14.1
+        # 'base58',        # 1.0.3
+        # 'ecdsa',         # 0.16.1
+        
+        'dimap>=2.5.0',
+        'dimax>=2.5.0',
+        'dimsdk>=2.5.0',
+        # 'dimp>=2.5.0',
+        # 'dkd>=2.5.0',
+        # 'mkm>=2.5.0',
+
+        'startrek>=2.3.3',
+
+        'aiou>=1.2.0',
     ]
 ```
 

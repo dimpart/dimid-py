@@ -23,7 +23,11 @@
 # SOFTWARE.
 # ==============================================================================
 
-from typing import Optional, Union
+from typing import Optional, Union, List
+from typing import Mapping
+
+from ...utils import get_exception_traceback
+from ...utils import StrMap
 
 from ...utils import template_replace
 from ...utils import Log, Logging
@@ -114,32 +118,47 @@ class Storage(Logging):
         try:
             return await TextFile(path=path).read()
         except Exception as error:
-            Log.error(msg='Storage >\t%s' % error)
+            Log.error('Storage >\t%s', error)
+            # traceback.print_exc()
+            tr = get_exception_traceback()
+            Log.error('traceback: %s', tr)
 
     @classmethod
-    async def read_json(cls, path: str) -> Union[dict, list, None]:
+    async def read_json(cls, path: str) -> Union[Mapping, List, None]:
         try:
             return await JSONFile(path=path).read()
         except Exception as error:
-            Log.error(msg='Storage >\t%s' % error)
+            Log.error('Storage >\t%s', error)
+            # traceback.print_exc()
+            tr = get_exception_traceback()
+            Log.error('traceback: %s', tr)
 
     @classmethod
     async def write_text(cls, text: str, path: str) -> bool:
         try:
             return await TextFile(path=path).write(text=text)
         except Exception as error:
-            Log.error(msg='Storage >\t%s' % error)
+            Log.error('Storage >\t%s', error)
+            # traceback.print_exc()
+            tr = get_exception_traceback()
+            Log.error('traceback: %s', tr)
 
     @classmethod
-    async def write_json(cls, container: Union[dict, list], path: str) -> bool:
+    async def write_json(cls, container: Union[List, Mapping, StrMap], path: str) -> bool:
         try:
             return await JSONFile(path=path).write(container=container)
         except Exception as error:
-            Log.error(msg='Storage >\t%s' % error)
+            Log.error('Storage >\t%s', error)
+            # traceback.print_exc()
+            tr = get_exception_traceback()
+            Log.error('traceback: %s', tr)
 
     @classmethod
     async def append_text(cls, text: str, path: str) -> bool:
         try:
             return await TextFile(path=path).append(text=text)
         except Exception as error:
-            Log.error(msg='Storage >\t%s' % error)
+            Log.error('Storage >\t%s', error)
+            # traceback.print_exc()
+            tr = get_exception_traceback()
+            Log.error('traceback: %s', tr)

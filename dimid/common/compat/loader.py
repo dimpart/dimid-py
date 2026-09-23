@@ -27,12 +27,13 @@ from typing import Optional, Any
 
 from dimsdk import Converter, BaseConverter
 from dimsdk import DateTime
-
-from dimsdk import AsymmetricAlgorithms
 from dimsdk import AsymmetricKey, PrivateKey, PublicKey
-from dimplugins import RSAPrivateKeyFactory, RSAPublicKeyFactory
-from dimplugins import ExtensionLoader
-from dimplugins import PluginLoader
+
+from dimax import ExtensionLoader
+
+from dimap import AsymmetricAlgorithms
+from dimap import RSAPrivateKeyFactory, RSAPublicKeyFactory
+from dimap import PluginLoader
 
 
 class LibraryLoader:

@@ -26,10 +26,11 @@
 from typing import Optional, List
 
 from dimsdk import PrivateKey, DecryptKey, SignKey
-from dimsdk import ID, Meta, Document, Bulletin
+from dimsdk import ID, Meta, Document
+from dimax import Visa
 
-from ..utils import Config
-from ..common import MetaUtils
+from ..utils import Config, Logging
+from ..common import MetaUtils, DocumentUtils
 from ..common import AccountDBI
 
 from .t_private import PrivateKeyTable
@@ -37,7 +38,7 @@ from .t_meta import MetaTable
 from .t_document import DocumentTable
 
 
-class AccountDatabase(AccountDBI):
+class AccountDatabase(Logging, AccountDBI):
     """
         Database for MingKeMing
         ~~~~~~~~~~~~~~~~~~~~~~~
@@ -60,18 +61,22 @@ class AccountDatabase(AccountDBI):
 
     # Override
     async def save_private_key(self, key: PrivateKey, user: ID, key_type: str = 'M') -> bool:
+        user = user.without_terminal()  # Naked ID
         return await self._private_table.save_private_key(key=key, user=user, key_type=key_type)
 
     # Override
     async def private_keys_for_decryption(self, user: ID) -> List[DecryptKey]:
+        user = user.without_terminal()  # Naked ID
         return await self._private_table.private_keys_for_decryption(user=user)
 
     # Override
     async def private_key_for_signature(self, user: ID) -> Optional[SignKey]:
+        user = user.without_terminal()  # Naked ID
         return await self._private_table.private_key_for_signature(user=user)
 
     # Override
     async def private_key_for_visa_signature(self, user: ID) -> Optional[SignKey]:
+        user = user.without_terminal()  # Naked ID
         return await self._private_table.private_key_for_visa_signature(user=user)
 
     #
@@ -80,13 +85,16 @@ class AccountDatabase(AccountDBI):
 
     # Override
     async def save_meta(self, meta: Meta, identifier: ID) -> bool:
+        identifier = identifier.without_terminal()  # Naked ID
         # check meta with ID
-        if not MetaUtils.match_id(identifier=identifier, meta=meta):
+        ok = meta.is_valid and MetaUtils.match_id(identifier=identifier, meta=meta)
+        if not ok:
             raise ValueError(f'meta not match: {identifier} => {meta}')
         return await self._meta_table.save_meta(meta=meta, identifier=identifier)
 
     # Override
     async def get_meta(self, identifier: ID) -> Optional[Meta]:
+        identifier = identifier.without_terminal()  # Naked ID
         return await self._meta_table.get_meta(identifier=identifier)
 
     #
@@ -95,23 +103,63 @@ class AccountDatabase(AccountDBI):
 
     # Override
     async def save_document(self, document: Document, identifier: ID) -> bool:
-        # check meta first
-        meta = await self._meta_table.get_meta(identifier=identifier)
+        terminal = identifier.terminal
+        if terminal is not None:
+            identifier = identifier.without_terminal()  # Naked ID
+            # check terminal in visa document
+            if isinstance(document, Visa):
+                # old = DocumentUtils.get_visa_terminal(document=document)
+                old = document.get('terminal')
+                if old is None or old == '' or old == '*':
+                    document['terminal'] = terminal
+        # elif isinstance(document, Bulletin):
+        #     # check founder of group in bulletin document
+        #     founder = document.founder
+        #     if founder is not None:
+        #         f_meta = await self.get_meta(identifier=founder)
+        #         if f_meta is None or f_meta.public_key != meta.public_key:
+        #             raise ValueError(f'founder error: {founder}, group: {identifier}')
+        # check ID
+        did = DocumentUtils.get_document_id(document=document)
+        if did is None:
+            self.warning('set id for document: %s, %s', identifier, document)
+            document['did'] = str(identifier)
+        elif not did.is_same_as(other=identifier):
+            self.error('document id not match: %s, %s', identifier, document)
+            return False
+        # check document with meta.key
+        meta = await self.get_meta(identifier=identifier)
         if meta is None:
             raise LookupError(f'meta not exists: {identifier}')
-        # check document valid before saving it
-        if not (document.is_valid or document.verify(public_key=meta.public_key)):
-            raise ValueError(f'document error: {identifier}')
-        # check founder in group document
-        if isinstance(document, Bulletin):
-            founder = document.founder
-            if founder is not None:
-                f_meta = await self._meta_table.get_meta(identifier=founder)
-                if f_meta is None or meta.public_key != meta.public_key:
-                    raise ValueError(f'founder error: {founder}, group: {identifier}')
-        # document ok, try to save it
+        elif not document.verify(public_key=meta.public_key):
+            raise ValueError(f'document invalid: {identifier}, {document}')
+        # OK, save to local storage
         return await self._doc_table.save_document(document=document, identifier=identifier)
 
     # Override
     async def get_documents(self, identifier: ID) -> List[Document]:
-        return await self._doc_table.get_documents(identifier=identifier)
+        terminal = identifier.terminal
+        if terminal is not None:
+            identifier = identifier.without_terminal()  # Naked ID
+        # load
+        documents = await self._doc_table.get_documents(identifier=identifier)
+        total = len(documents)
+        if terminal is not None:
+            # filter for terminal
+            array = []
+            index = 0
+            for doc in documents:
+                index += 1
+                if isinstance(doc, Visa) and DocumentUtils.get_visa_terminal(document=doc) != terminal:
+                    # visa terminal not matched
+                    self.info('[%d/%d] skip visa not for: %s/%s, %s', index, total, identifier, terminal, doc)
+                else:
+                    self.info('[%d/%d]  got document for: %s/%s, %s', index, total, identifier, terminal, doc)
+                    array.append(doc)
+            self.info('filter %d/%d document(s) for user: %s/%s', len(array), total, identifier, terminal)
+            documents = array
+        else:
+            self.info('loaded %d document(s) for user: %s', total, identifier)
+        return documents
+
+    #

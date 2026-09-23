@@ -25,7 +25,6 @@
 
 from typing import Optional, List
 
-from dimsdk import TransportableData
 from dimsdk import ID, Document
 
 from ...utils import template_replace
@@ -48,65 +47,29 @@ class DocumentStorage(Storage):
 
     def __docs_path(self, identifier: ID) -> str:
         path = self.public_path(self.docs_path)
-        return template_replace(path, key='ADDRESS', value=str(identifier.address))
+        address = str(identifier.address)
+        return template_replace(path, key='ADDRESS', value=address)
 
     async def save_documents(self, documents: List[Document], identifier: ID) -> bool:
         """ save documents into file """
+        info = DocumentUtils.dump_documents(documents=documents)
         path = self.__docs_path(identifier=identifier)
-        self.info(msg='Saving %d document(s) into: %s' % (len(documents), path))
-        array = []
-        for doc in documents:
-            assert identifier == doc.get('did'), 'document ID not matched: %s, %s' % (identifier, doc)
-            info = doc.to_dict()
-            array.append(info)
-        return await self.write_json(container=array, path=path)
+        self.info('Saving %d document(s) into: %s', len(documents), path)
+        return await self.write_json(container=info, path=path)
 
     async def load_documents(self, identifier: ID) -> Optional[List[Document]]:
         """ load documents from file """
         path = self.__docs_path(identifier=identifier)
-        # self.info(msg='Loading documents from: %s' % path)
-        array = await self.read_json(path=path)
-        if array is None:
+        # self.info('Loading documents from: %s', path)
+        info = await self.read_json(path=path)
+        if info is None:
             # file not found
-            self.warning(msg='document file not found: %s' % path)
+            self.warning('document file not found: %s', path)
             return None
-        documents = []
-        for info in array:
-            doc = parse_document(dictionary=info, identifier=identifier)
-            if doc is not None:
-                documents.append(doc)
-        self.info(msg='Loaded %d documents from: %s' % (len(documents), path))
+        # load documents from local storage
+        documents = DocumentUtils.pump_documents(info=info)
+        if documents is None:
+            self.error('documents error: %s -> %s', identifier, path)
+        else:
+            self.info('Loaded %d document(s) from: %s', len(documents), path)
         return documents
-
-
-def parse_document(dictionary: dict, identifier: ID = None, doc_type: str = '*') -> Optional[Document]:
-    # check document ID
-    doc_id = DocumentUtils.get_document_id(document=dictionary)
-    assert doc_id is not None, 'document error: %s' % dictionary
-    if identifier is None:
-        identifier = doc_id
-    else:
-        assert identifier == doc_id, 'document ID not match: %s, %s' % (identifier, doc_id)
-    # check document type
-    doc_ty = DocumentUtils.get_document_type(document=dictionary)
-    if doc_ty is not None:
-        doc_type = doc_ty
-    # check document data
-    data = dictionary.get('data')
-    if data is None:
-        # compatible with v1.0
-        data = dictionary.get('profile')
-    # check document signature
-    signature = dictionary.get('signature')
-    if data is None or signature is None:
-        raise ValueError(f'document error: {dictionary}')
-    ted = TransportableData.parse(signature)
-    doc = Document.create(doc_type=doc_type, data=data, signature=ted)
-    doc.set_string(key='did', value=identifier)
-    for key in dictionary:
-        if key == 'did' or key == 'data' or key == 'signature':
-            continue
-        elif key == 'ID':
-            continue
-        doc[key] = dictionary[key]
-    return doc

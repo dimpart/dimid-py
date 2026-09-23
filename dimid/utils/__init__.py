@@ -33,31 +33,32 @@
                                              -- Albert Moky @ Jan. 23, 2019
 """
 
-from typing import Optional, List, Dict
+import traceback
+from io import StringIO
+from typing import TypeVar, Callable
 
-from dimsdk import sha256, keccak256, ripemd160
-from dimsdk import base64_encode, base64_decode, base58_encode, base58_decode
-from dimsdk import hex_encode, hex_decode
-from dimsdk import utf8_encode, utf8_decode
-from dimsdk import json_encode, json_decode
+from dimsdk.dkd.compress_keys import StringPairing
 
-from dimsdk import Converter
-from dimsdk import DateTime
-from dimsdk import ReliableMessage
+from dimap.crypto.aes import random_bytes
 
-from dimplugins.crypto.aes import random_bytes
-from dimplugins.mem import MemoryCache, ThanosCache
+from dimax import MemoryCache, ThanosCache
 
-from startrek.utils import Log, Logging, LogLevel
-from startrek.skywalker import Singleton
-from startrek.skywalker import Runnable, Runner, Daemon
-from startrek.fsm import Delegate as StateDelegate
+from small.utils import Singleton
+from small.log import Log, Logging, LogLevel
+from small.skywalker import Runnable, Runner, Daemon
+from small.fsm import Delegate as StateDelegate
 
 from aiou import Path, File, TextFile, JSONFile
+
+from .sdk import *
+
+# from .checker import FrequencyChecker
+# from .checker import RecentTimeChecker
 
 from .opt import SysArgvParser
 
 from .log import init_logger
+
 from .cache import CachePool, SharedCacheManager
 
 from .http import HttpSession, HttpClient
@@ -66,85 +67,88 @@ from .conf_item import IConfig, MessageTransferAgent, Supervisor, NeighborLoader
 from .config import Config
 
 
-def is_before(old_time: Optional[DateTime], new_time: Optional[DateTime]) -> bool:
-    """ check whether new time is before old time """
-    if old_time is None or new_time is None:
-        return False
-    else:
-        return new_time.before(old_time)
-    # return DocumentUtils.is_before(old_time, new_time)
-
-
-def get_msg_sig(msg: ReliableMessage) -> str:
-    """ last 6 bytes (signature in base64) """
-    sig = msg.get('signature')
-    # assert isinstance(sig, str), 'signature error: %s' % sig
-    sig = sig.strip()
-    return sig[-8:]  # last 6 bytes (signature in base64)
-
-
-def get_msg_traces(msg: ReliableMessage) -> List:
-    traces = msg.get('traces')
-    if traces is None:
-        return []
-    assert isinstance(traces, List), 'traces error: %s' % traces
-    stations = []
-    for item in traces:
-        if isinstance(item, Dict):
-            sid = item.get('did')
-            if sid is None:
-                sid = item.get('ID')
-        elif isinstance(item, str):
-            sid = item
-        else:
-            Log.error(msg='trace item error: %s' % item)
-            continue
-        stations.append(sid)
-    return stations
-
-
-def get_msg_info(msg: ReliableMessage) -> str:
-    sig = get_msg_sig(msg=msg)
-    traces = get_msg_traces(msg=msg)
-    group = msg.group
-    if group is None:
-        return '%s => %s [%s] %s, traces: %s' % (msg.sender, msg.receiver, msg.time, sig, traces)
-    else:
-        return '%s => %s, %s [%s] %s, traces: %s' % (msg.sender, msg.receiver, group, msg.time, sig, traces)
-
-
 def template_replace(template: str, key: str, value: str) -> str:
     """ replace '{key}' with value """
     tag = '{%s}' % key
     return template.replace(tag, value)
 
 
+def get_exception_traceback() -> str:
+    buf = StringIO()
+    traceback.print_exc(file=buf)
+    return buf.getvalue()
+
+
+T = TypeVar('T')
+
+
+def list_remove_where(array: List[T], predicate: Callable[[T], bool]) -> List[T]:
+    """
+    Filters list in-place with two-pointer algorithm.
+    Element will be removed if predicate returns True.
+
+    :param array: Target list, modified in-place
+    :param predicate: A function accepting an element, return True = remove, False = keep
+    :return: The original input list (enables method chaining)
+    """
+    write = 0
+    for item in array:
+        if not predicate(item):
+            array[write] = item
+            write += 1
+    del array[write:]
+    return array
+
+
 __all__ = [
 
+    'StringPairing',
+
+    'random_bytes',
+    'MemoryCache', 'ThanosCache',
+
+    'Singleton',
+    'Log', 'Logging', 'LogLevel',
+    'Runnable', 'Runner', 'Daemon',
+    'StateDelegate',
+
+    'Path', 'File', 'TextFile', 'JSONFile',
+
+    # ================================================================
+
+    'StrMap', 'MutableStrMap',
+    'AnyList', 'StrList',
+
+    'URI', 'DateTime',
+
+    'Converter',
+
+    # ----------------------------------------------------------------
+
+    # 'md5', 'MD5', 'MD5Digester',
+    # 'sha1', 'SHA1', 'SHA1Digester',
     'sha256', 'keccak256', 'ripemd160',
+
     'base64_encode', 'base64_decode', 'base58_encode', 'base58_decode',
     'hex_encode', 'hex_decode',
     'utf8_encode', 'utf8_decode',
     'json_encode', 'json_decode',
 
-    'random_bytes',
-    'MemoryCache', 'ThanosCache',
+    'crypto_extensions', 'format_extensions',
+    'account_extensions',
+    'message_extensions', 'command_extensions',
 
-    'Converter',
-    'DateTime',
+    'is_before',
+    'get_msg_sig', 'get_msg_info',
 
-    'Runnable', 'Runner', 'Daemon',
-    'StateDelegate',
+    # ================================================================
 
-
-    'Singleton',
+    # 'FrequencyChecker', 'RecentTimeChecker',
 
     'SysArgvParser',
 
-    'Log', 'Logging', 'LogLevel',
     'init_logger',
 
-    'Path', 'File', 'TextFile', 'JSONFile',
     'CachePool', 'SharedCacheManager',
 
     'HttpSession', 'HttpClient',
@@ -152,8 +156,12 @@ __all__ = [
     'IConfig', 'MessageTransferAgent', 'Supervisor', 'NeighborLoader',
     'Config',
 
-    'is_before',
-    'get_msg_sig', 'get_msg_info',
+    # ================================================================
+
     'template_replace',
+
+    'get_exception_traceback',
+
+    'list_remove_where',
 
 ]

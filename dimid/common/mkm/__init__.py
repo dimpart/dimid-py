@@ -30,6 +30,7 @@
 
 from dimsdk.mkm import *
 
+from .utils import IDUtils
 from .utils import MetaUtils
 from .utils import DocumentUtils
 
@@ -54,7 +55,6 @@ __all__ = [
     #   Utils
     #
 
-    'MetaUtils',
-    'DocumentUtils',
+    'IDUtils', 'MetaUtils', 'DocumentUtils',
 
 ]

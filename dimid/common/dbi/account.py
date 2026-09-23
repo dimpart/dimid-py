@@ -24,11 +24,13 @@
 # ==============================================================================
 
 from abc import ABC, abstractmethod
-from typing import Optional, Union, Dict, List
+from typing import Optional, Union, List
 from typing import Iterable
 
 from dimsdk import PrivateKey, SignKey, DecryptKey
 from dimsdk import ID, Meta, Document
+
+from ...utils import MutableStrMap
 
 
 class PrivateKeyDBI(ABC):
@@ -82,10 +84,10 @@ class PrivateKeyDBI(ABC):
         return private_keys
 
     @classmethod
-    def revert_private_keys(cls, keys: Iterable[PrivateKey]) -> List[Dict]:
+    def revert_private_keys(cls, keys: Iterable[PrivateKey]) -> List[MutableStrMap]:
         array = []
         for item in keys:
-            key_info = item.to_dict()
+            key_info = item.to_map()
             array.append(key_info)
         return array
 

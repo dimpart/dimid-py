@@ -157,7 +157,7 @@ class BaseAccount(Logging, ABC):
         doc = DocumentUtils.last_document(documents=documents)
         if doc is not None:
             # clone for editing
-            doc = Document.parse(document=doc.copy_dict())
+            doc = Document.parse(document=doc.copy_map())
             ok = doc.verify(public_key=meta.public_key)
             assert ok, 'document error: %s, %s' % (identifier, doc)
         self.__id = identifier
@@ -213,7 +213,7 @@ class BaseAccount(Logging, ABC):
     def generate_identifier(self, network: int) -> ID:
         """ 2. generate id with meta """
         assert self.__id is None, 'ID exists: %s' % self.__id
-        self.__id = ID.generate(meta=self.__meta, network=network)
+        self.__id = self.__meta.generate_id(network=network)
         return self.__id
 
     # protected

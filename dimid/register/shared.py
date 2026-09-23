@@ -27,7 +27,9 @@ import sys
 from typing import Optional
 
 from dimsdk import EntityType
-from dimsdk import ID, Bulletin
+from dimsdk import ID
+
+from dimax import Bulletin
 
 from ..utils import SysArgvParser
 from ..utils import Log
